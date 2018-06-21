@@ -23,14 +23,16 @@ import chainer
 from chainer import cuda
 from chainer import serializers
 import net
-
+import ipdb
 def gan_test(args, model_path):
     # Prepare Flow and Texture GAN model, defined in net.py
 
     gen_flow = net.FlowGenerator()
     serializers.load_npz(model_path["gen_flow"], gen_flow)
     gen_tex = net.Generator(dimz=100)
-    serializers.load_npz(model_path["gen_tex"], gen_tex)
+    tex_path = '/BS/garvita/work/hlcv/FTGAN/models/gen_tex_iteration_10000.bin'
+    serializers.load_npz(tex_path, gen_tex)
+
 
     if args.gpu >= 0:
         cuda.get_device(args.gpu).use()

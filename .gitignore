@@ -3,3 +3,4 @@ data/*
 README.md
 *.pyc
 .idea/
+src/result_demo/*
