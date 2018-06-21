@@ -1,1 +1,5 @@
-
+models/*
+data/*
+README.md
+*.pyc
+.idea/
