@@ -4,3 +4,4 @@ README.md
 *.pyc
 .idea/
 src/result_demo/*
+src/result_flowgan/*

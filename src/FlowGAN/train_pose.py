@@ -1,3 +1,5 @@
+
+
 #!/usr/bin/env python
 """
 Code for reproducing main results in the paper
@@ -24,7 +26,7 @@ from chainer.training import extensions
 from chainer import training
 
 from visualizer import extension
-from data_processor import PreprocessedDataset
+from data_processor import PreprocessedDataset, PreprocessedDataset_pose
 from net import GAN_Updater
 import net
 import ipdb
@@ -45,7 +47,7 @@ def gan_training(args, train):
         train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize, n_processes=args.loaderjob)
     else:
         train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
-
+    ipdb.set_trace()
     # Prepare Flow GAN model, defined in net.py
     gen = net.Generator(video_len=args.video_len)
     dis = net.Discriminator()
@@ -101,8 +103,8 @@ def gan_training(args, train):
         chainer.serializers.load_npz(args.resume, trainer)
 
     # Run the training
-    print('Before run')
-
+    print('before run ')
+    ipdb.set_trace()
     trainer.run()
 
 def main():
@@ -140,7 +142,6 @@ def main():
                         help='')
 
     args = parser.parse_args()
-
     if not os.path.exists(args.out):
         os.system('mkdir -p ' + args.out)
 
@@ -149,17 +150,18 @@ def main():
     print('# Minibatch-size: {}'.format(args.batchsize))
     print('# iteration: {}'.format(args.iteration))
     print('# dataset: {}'.format(args.dataset))
-
-
-    flow_root = args.root + '/flow_76/'
-    Train = []
     ipdb.set_trace()
+    pose_root = args.root + 'labels/'
+    Train = []
     f = open('../../data/penn_action/train.txt')
+    #f is txt file with 'indx'\n
+    #Train stores all the index for training set
     for line in f.readlines():
         Train.append(line.split()[0])
     f.close()
     ipdb.set_trace()
-    train = PreprocessedDataset(Train, flow_root, video_len=args.video_len)
+
+    train = PreprocessedDataset_pose(Train, pose_root, video_len=args.video_len)
     ipdb.set_trace()
     ## main training
     gan_training(args, train)

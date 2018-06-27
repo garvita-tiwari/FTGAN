@@ -23,7 +23,7 @@ def CheckVideo(video):
     else:
         return video, ratio
 
-def CalcFlow(video, parameter = 2):
+def CalcFlow(video, data_root, video_id, frame_id, parameter = 2):
     for i in range(0, len(video) - 2):
         #ipdb.set_trace()
         prev = cv2.cvtColor(video[i], cv2.COLOR_BGR2GRAY)
@@ -36,7 +36,14 @@ def CalcFlow(video, parameter = 2):
             flow = cv2.calcOpticalFlowFarneback(prev, next, None, 0.5, 3, 15, 3, 5, 1.2, 0)
         elif parameter == 3:
             a=1
-            #flow = cv2.calcOpticalFlowFarneback(prev, next, None, 0.5, 3, 3, 3, 5, 1.1, 0)
+            #flow = cv2.calcOpticalFlowFarneback(prev, next, None, 0.5, 3, 3, 3, 5, 1.1, 0)#
+        result_path =  data_root + 'flow_img/frames/{:04}/'.format(video_id)
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+        imgpath =  result_path + '{:04}_flow1.png'.format(i)
+        cv2.imwrite(imgpath, flow[:, :, 0])
+        imgpath = result_path + '{:04}_flow2.png'.format(i)
+        cv2.imwrite(imgpath, flow[:, :, 1])
         if i == 0:
             Flows = np.zeros((len(video) - 1,) + flow.shape, flow.dtype)
         Flows[i] = flow
@@ -79,7 +86,7 @@ def main():
                     print save_path_flow
                     video = np.load(npy_path)
 
-                    Flows = CalcFlow(video, parameter=parameter)
+                    Flows = CalcFlow(video, data_root, video_id, frame_id, parameter=parameter)
                     Flows = ConvertFlow2Img(Flows, -1 * bound, bound)
 
                     SmallImgs = np.zeros((video.shape[0], 76, 76, 3), np.uint8)
@@ -127,7 +134,7 @@ def main():
                 img = cv2.imread(img_path,1)
                 video.append(img)
             print('video_id:', video_id)
-            Flows = CalcFlow(video, parameter=parameter)
+            Flows = CalcFlow(video, data_root, video_id,  frame_id,  parameter=parameter)
             Flows = ConvertFlow2Img(Flows, -1 * bound, bound)
             SmallImgs = np.zeros((len(video), 76, 76, 3), np.uint8)
             SmallFlows = np.zeros((len(video) - 1, 76, 76, 2), np.uint8)
@@ -146,7 +153,7 @@ def main():
                 os.makedirs(save_root_small_img)
             save_path = save_root_small_img + '{:04}.npy'.format(video_id)
             np.save(save_path, SmallImgs )
-
+            # IN npy file flow dim is [num_frmaes-1, frame_size, 2], optical flow  data has 2 dim, one ofr flow along x adn one along y
             if not os.path.exists(save_root_small_flow):
                 os.makedirs(save_root_small_flow)
             save_path = save_root_small_flow + '{:04}.npy'.format(video_id)

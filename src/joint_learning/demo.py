@@ -40,8 +40,8 @@ def gan_test(args, model_path):
         gen_tex.to_gpu()
     xp = np if args.gpu < 0 else cuda.cupy
 
-    rows = 5
-    cols = 5
+    rows = 1
+    cols = 1
 
     ### generate videos from Z
     np.random.seed(0)
@@ -54,6 +54,8 @@ def gan_test(args, model_path):
         with chainer.using_config('train', False):
             flow_fake, _, _ = gen_flow(z_flow)
         flow_fake_tmp = chainer.cuda.to_cpu(flow_fake.data)
+
+        ###Refine Flow
 
         ### generate video
         with chainer.using_config('train', False):
