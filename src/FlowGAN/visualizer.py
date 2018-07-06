@@ -69,3 +69,5 @@ def extension(model, args, rows=5, cols=5, seed=0):
             Image.fromarray(flow_img).save(preview_path)
 
     return make_video
+if __name__ == '__main__':
+    main()

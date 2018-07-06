@@ -11,7 +11,7 @@ import chainer.links as L
 
 from chainer import Variable
 from custom_opt import l1_penalty
-
+import ipdb
 class Generator(chainer.Chain):
     def __init__(self, video_len = 32):
         w = chainer.initializers.Normal(0.02)
@@ -21,7 +21,9 @@ class Generator(chainer.Chain):
             dc1=L.DeconvolutionND(3, 512, 256, 4, 2, 1, initialW=w),
             dc2=L.DeconvolutionND(3, 256, 128, 4, 2, 1, initialW=w),
             dc3=L.DeconvolutionND(3, 128, 64, 4, 2, 1, initialW=w),
-            dc_fore=L.DeconvolutionND(3, 64, 2, 4, 2, 1, initialW=w),
+            #dc_foreground and mask are for mask and final foregrounf of OF. SO maybe thats why it has 2 channels as output
+            dc_fore=L.DeconvolutionND(3, 64, 3, 4, 2, 1, initialW=w),  #out_channel was initially 2, for 2 OF channels
+            #dc_fore=L.DeconvolutionND(3, 64, 2, 4, 2, 1, initialW=w),  #out_channel was initially 2, for 2 OF channels
             dc_mask=L.DeconvolutionND(3, 64, 1, 4, 2, 1, initialW=w),
 
             bn0=L.BatchNormalization(4*4*512*(self.video_len/16)),
@@ -31,6 +33,7 @@ class Generator(chainer.Chain):
         )
 
     def make_hidden(self, batchsize):
+        # add condition for z here, this is nitial  noise given to network
         return numpy.random.normal(0, 1, (batchsize, 100, 1, 1))\
             .astype(numpy.float32)
 
@@ -42,22 +45,30 @@ class Generator(chainer.Chain):
         h = F.relu(self.bn3(self.dc3(h)))
         h_fore = F.tanh(self.dc_fore(h))
 
-        h_mask = F.sigmoid(self.dc_mask(h))
+        h_mask = F.sigmoid(self.dc_mask(h))  #hmask for pose channel should be different, so simply tiling will not resolve the issue
         h_mask = l1_penalty(h_mask)
-        h_mask_rep = F.tile(h_mask, (1, 2, 1, 1, 1))
+        h_mask_rep = F.tile(h_mask, (1, 3, 1, 1, 1))  #initial input channel was 2
+        #h_mask_rep = F.tile(h_mask, (1, 2, 1, 1, 1))  #initial input channel was 2
 
         x = h_mask_rep * h_fore
         if chainer.config.train:
             return x
         else:
             return x, h_fore, h_mask
-
+def numberOfNonNans(data):
+    count = 0
+    for i in data:
+        if not numpy.isnan(i):
+            count += 1
+    return count
 class Discriminator(chainer.Chain):
 
     def __init__(self):
         w = chainer.initializers.Normal(0.02)
+
         super(Discriminator, self).__init__(
-            c0=L.ConvolutionND(3, 2, 64, 4, 2, 1, initialW=w),
+            c0=L.ConvolutionND(3, 3, 64, 4, 2, 1, initialW=w),  #initial input channel was 2
+            #c0=L.ConvolutionND(3, 2, 64, 4, 2, 1, initialW=w),  #initial input channel was 2
             c1=L.ConvolutionND(3, 64, 128, 4, 2, 1, initialW=w),
             c2=L.ConvolutionND(3, 128, 256, 4, 2, 1, initialW=w),
             c3=L.ConvolutionND(3, 256, 512, 4, 2, 1, initialW=w),
@@ -68,10 +79,21 @@ class Discriminator(chainer.Chain):
         )
 
     def __call__(self, x):
+        #k = numberOfNonNans(x)
+        #print(k)
         h = F.leaky_relu(self.c0(x))
+        #k = numberOfNonNans(h)
+        #print(k)
+
         h = F.leaky_relu(self.bn1(self.c1(h)))
+        #k = numberOfNonNans(h)
+        #print(k)
         h = F.leaky_relu(self.bn2(self.c2(h)))
+        #k = numberOfNonNans(h)
+        #print(k)
         h = F.leaky_relu(self.bn3(self.c3(h)))
+        #k = numberOfNonNans(h)
+        #print(k)
         return self.l4(h)
 
 class GAN_Updater(chainer.training.StandardUpdater):
@@ -94,22 +116,25 @@ class GAN_Updater(chainer.training.StandardUpdater):
         return loss
 
     def update_core(self):
+
         gen_optimizer = self.get_optimizer('gen')
         dis_optimizer = self.get_optimizer('dis')
-
         batch = self._iterators['main'].next()
         flow_real = Variable(self.converter(batch, self.device))
 
         gen, dis = self.generator, self.discriminator
-        xp = chainer.cuda.get_array_module(flow_real.data)
+        xp = chainer.cuda.get_array_module(flow_real.data)  #how this xp relates to z
+
         y_real = dis(flow_real)
         batchsize = flow_real.data.shape[0]
 
         ### z or image
+        #ipdb.set_trace()
         z = Variable(xp.asarray(gen.make_hidden(batchsize)))
+        #ipdb.set_trace()
         flow_fake = gen(z)
-
         y_fake = dis(flow_fake)
-
         dis_optimizer.update(self.loss_dis, dis, y_fake, y_real)
+
         gen_optimizer.update(self.loss_gen, gen, y_fake)
+

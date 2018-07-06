@@ -28,7 +28,8 @@ def gan_test(args, model_path):
     # Prepare Flow and Texture GAN model, defined in net.py
 
     gen_flow = net.FlowGenerator()
-    serializers.load_npz(model_path["gen_flow"], gen_flow)
+    gen_path = '/BS/garvita/work/hlcv/FTGAN/src/result_flowgan_3ch/gen_iteration_60000.npz'
+    serializers.load_npz(gen_path, gen_flow)
     gen_tex = net.Generator(dimz=100)
     tex_path = '/BS/garvita/work/hlcv/FTGAN/models/gen_tex_iteration_10000.bin'
     serializers.load_npz(tex_path, gen_tex)
@@ -53,6 +54,8 @@ def gan_test(args, model_path):
         ### generate flow
         with chainer.using_config('train', False):
             flow_fake, _, _ = gen_flow(z_flow)
+        #ipdb.set_trace()
+        flow_fake = flow_fake[:,0:2,:,:,:]
         flow_fake_tmp = chainer.cuda.to_cpu(flow_fake.data)
 
         ###Refine Flow
@@ -126,7 +129,7 @@ def main():
     parser = argparse.ArgumentParser(description='Hierarchical Video Generation from Orthogonal Information: Optical Flow and Texture (AAAI-18)')
     parser.add_argument('--gpu', '-g', default=-1, type=int,
                         help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--out', '-o', default='../result_demo/',
+    parser.add_argument('--out', '-o', default='../result_demo_3ch/',
                         help='Output directory')
     parser.add_argument('--loaderjob', '-j', type=int, default=8,
                         help='Number of parallel data loading processes')

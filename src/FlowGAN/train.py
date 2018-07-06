@@ -153,14 +153,11 @@ def main():
 
     flow_root = args.root + '/flow_76/'
     Train = []
-    ipdb.set_trace()
     f = open('../../data/penn_action/train.txt')
     for line in f.readlines():
         Train.append(line.split()[0])
     f.close()
-    ipdb.set_trace()
     train = PreprocessedDataset(Train, flow_root, video_len=args.video_len)
-    ipdb.set_trace()
     ## main training
     gan_training(args, train)
     ipdb.set_trace()

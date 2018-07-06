@@ -26,11 +26,11 @@ from chainer.training import extensions
 from chainer import training
 
 from visualizer import extension
-from data_processor import PreprocessedDataset, PreprocessedDataset_pose
+from data_processor import PreprocessedDataset, PreprocessedDataset2
 from net import GAN_Updater
 import net
 import ipdb
-
+CHAINER_DEBUG=1
 # Setup optimizer
 def make_optimizer(model, args, alpha=2e-4, beta1=0.5, beta2=0.999, epsilon=1e-8):
     optimizer = chainer.optimizers.Adam(alpha=alpha, beta1=beta1, beta2=beta2, eps=epsilon)
@@ -47,8 +47,8 @@ def gan_training(args, train):
         train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize, n_processes=args.loaderjob)
     else:
         train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
-    ipdb.set_trace()
-    # Prepare Flow GAN model, defined in net.py
+    print('Prepare gen and dis networks')
+        # Prepare Flow GAN model, defined in net.py
     gen = net.Generator(video_len=args.video_len)
     dis = net.Discriminator()
 
@@ -62,12 +62,13 @@ def gan_training(args, train):
     opt_dis = make_optimizer(dis, args)
 
     # Updater
+    print('prepare updater')
     updater = GAN_Updater(
         models=(gen, dis),
         iterator=train_iter,
         optimizer={'gen': opt_gen, 'dis': opt_dis},
         device=args.gpu)
-
+    print('chainer stuff.....   ')
     trainer = training.Trainer(updater, (args.iteration, 'iteration'), out=args.out)
 
     snapshot_interval = (args.snapshot_interval), 'iteration'
@@ -104,8 +105,9 @@ def gan_training(args, train):
 
     # Run the training
     print('before run ')
-    ipdb.set_trace()
-    trainer.run()
+    #ipdb.set_trace()
+    with chainer.using_config('debug', True):
+        trainer.run()
 
 def main():
     parser = argparse.ArgumentParser(description='Hierarchical Video Generation from Orthogonal Information: Optical Flow and Texture (AAAI-18)')
@@ -150,8 +152,8 @@ def main():
     print('# Minibatch-size: {}'.format(args.batchsize))
     print('# iteration: {}'.format(args.iteration))
     print('# dataset: {}'.format(args.dataset))
-    ipdb.set_trace()
     pose_root = args.root + 'labels/'
+    flow_root = args.root + '/flow_76/'
     Train = []
     f = open('../../data/penn_action/train.txt')
     #f is txt file with 'indx'\n
@@ -159,13 +161,11 @@ def main():
     for line in f.readlines():
         Train.append(line.split()[0])
     f.close()
-    ipdb.set_trace()
-
-    train = PreprocessedDataset_pose(Train, pose_root, video_len=args.video_len)
-    ipdb.set_trace()
-    ## main training
+    print('Before initialising train class')
+    train = PreprocessedDataset2(Train, pose_root, flow_root, video_len=args.video_len)
+    print('calling gan_ training')
+        ## main training
     gan_training(args, train)
-    ipdb.set_trace()
-
+    print('training done')
 if __name__ == '__main__':
     main()

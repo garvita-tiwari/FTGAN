@@ -5,3 +5,6 @@ README.md
 .idea/
 src/result_demo/*
 src/result_flowgan/*
+src/result_flowgan_3ch/*
+src/result_demo_3ch/*
+

@@ -106,7 +106,8 @@ class FlowGenerator(chainer.Chain):
             dc1=L.DeconvolutionND(3, 512, 256, 4, 2, 1, initialW=w),
             dc2=L.DeconvolutionND(3, 256, 128, 4, 2, 1, initialW=w),
             dc3=L.DeconvolutionND(3, 128, 64, 4, 2, 1, initialW=w),
-            dc_fore=L.DeconvolutionND(3, 64, 2, 4, 2, 1, initialW=w),
+            dc_fore=L.DeconvolutionND(3, 64, 3, 4, 2, 1, initialW=w),
+            #dc_fore=L.DeconvolutionND(3, 64, 3, 4, 2, 1, initialW=w),
             dc_mask=L.DeconvolutionND(3, 64, 1, 4, 2, 1, initialW=w),
 
             bn0=L.BatchNormalization(4 * 4 * 512 * (self.video_len / 16)),
@@ -129,7 +130,8 @@ class FlowGenerator(chainer.Chain):
 
         h_mask = F.sigmoid(self.dc_mask(h))
         h_mask = l1_penalty(h_mask)
-        h_mask_rep = F.tile(h_mask, (1, 2, 1, 1, 1))
+        #h_mask_rep = F.tile(h_mask, (1, 2, 1, 1, 1))
+        h_mask_rep = F.tile(h_mask, (1, 3, 1, 1, 1))
 
         x = h_mask_rep * h_fore
         if chainer.config.train:
@@ -141,7 +143,8 @@ class FlowDiscriminator(chainer.Chain):
     def __init__(self):
         w = chainer.initializers.Normal(0.02)
         super(FlowDiscriminator, self).__init__(
-            c0=L.ConvolutionND(3, 2, 64, 4, 2, 1, initialW=w),
+            c0=L.ConvolutionND(3, 3, 64, 4, 2, 1, initialW=w),
+            #c0=L.ConvolutionND(3, 2, 64, 4, 2, 1, initialW=w),
             c1=L.ConvolutionND(3, 64, 128, 4, 2, 1, initialW=w),
             c2=L.ConvolutionND(3, 128, 256, 4, 2, 1, initialW=w),
             c3=L.ConvolutionND(3, 256, 512, 4, 2, 1, initialW=w),
